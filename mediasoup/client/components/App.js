@@ -74,6 +74,8 @@ export default function App({webSocketUrl}){
                             displayName={peer.displayName} 
                             consumerTransport={consumerTransport} 
                             srr={socket} 
+                            audioEnabled={peer.audioEnabled}
+                            videoEnabled={peer.videoEnabled}
                         />
                         {/* Hidden audio element for peer's audio */}
                         <audio id={`audio-${peer.id}`} autoPlay playsInline className="hidden"></audio>

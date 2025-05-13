@@ -292,6 +292,20 @@ export function useMediaSoup(socket, videoRef, displayName) {
         if (audioTrack) {
             audioTrack.enabled = !audioTrack.enabled;
             console.log(`Audio ${audioTrack.enabled ? 'unmuted' : 'muted'}`);
+            
+            // Broadcast media state change to other peers
+            if (socket) {
+                try {
+                    socket.notify('mediaStateChanged', {
+                        type: 'audio',
+                        enabled: audioTrack.enabled
+                    });
+                    console.log(`Broadcasted audio state: ${audioTrack.enabled}`);
+                } catch (error) {
+                    console.error('Error broadcasting audio state:', error);
+                }
+            }
+            
             return audioTrack.enabled;
         }
         return false;
@@ -302,6 +316,20 @@ export function useMediaSoup(socket, videoRef, displayName) {
         if (videoTrack) {
             videoTrack.enabled = !videoTrack.enabled;
             console.log(`Video ${videoTrack.enabled ? 'enabled' : 'disabled'}`);
+            
+            // Broadcast media state change to other peers
+            if (socket) {
+                try {
+                    socket.notify('mediaStateChanged', {
+                        type: 'video',
+                        enabled: videoTrack.enabled
+                    });
+                    console.log(`Broadcasted video state: ${videoTrack.enabled}`);
+                } catch (error) {
+                    console.error('Error broadcasting video state:', error);
+                }
+            }
+            
             return videoTrack.enabled;
         }
         return false;

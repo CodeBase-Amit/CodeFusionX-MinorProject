@@ -6,6 +6,29 @@
         <title>CodeFusionX Video Conference</title>
 		<script>
 			window.localStorage.setItem('debug', '*');
+            
+            // Listen for messages from parent window
+            window.addEventListener('message', function(event) {
+                // Handle keep-alive messages from parent
+                if (event.data && event.data.type === 'keep-alive') {
+                    console.log('Received keep-alive message from parent');
+                    // Do something minimal to keep the connection active
+                    if (window.__keepAliveCallback) {
+                        window.__keepAliveCallback();
+                    }
+                }
+            });
+            
+            // Handle visibility changes
+            document.addEventListener('visibilitychange', function() {
+                if (document.visibilityState === 'hidden') {
+                    console.log('Page is now hidden, but staying active');
+                    // Set a flag that the page should stay active
+                    window.__keepActive = true;
+                } else {
+                    console.log('Page is now visible');
+                }
+            });
 		</script>
         <!-- Font Awesome for icons -->
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">

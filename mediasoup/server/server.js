@@ -87,7 +87,10 @@ function createSocketServer(httpServer) {
             consumerTransport : undefined,
             producers         : new Map(),
             consumers         : new Map(),
-            gProcess          : undefined
+            gProcess          : undefined,
+            roomId            : undefined,
+            audioEnabled      : true,
+            videoEnabled      : true
         };
         
         logger.info(`new peer connected with id: ${peer.id}`);
@@ -233,9 +236,19 @@ function createSocketServer(httpServer) {
                         for (const otherPeer of onlinePeers.values()) {
                             if (otherPeer.id !== peer.id && otherPeer.roomId === peer.roomId) {
                                 logger.info(`Notifying peer ${otherPeer.displayName} that ${displayName} joined room ${peer.roomId}`);
-                                otherPeer.socket.notify('peerJoined', { id: peer.id, displayName });
+                                otherPeer.socket.notify('peerJoined', { 
+                                    id: peer.id, 
+                                    displayName,
+                                    audioEnabled: peer.audioEnabled,
+                                    videoEnabled: peer.videoEnabled 
+                                });
                                 
-                                otherPeerDetails.push({ id: otherPeer.id, displayName: otherPeer.displayName });
+                                otherPeerDetails.push({ 
+                                    id: otherPeer.id, 
+                                    displayName: otherPeer.displayName,
+                                    audioEnabled: otherPeer.audioEnabled,
+                                    videoEnabled: otherPeer.videoEnabled
+                                });
                             }
                         }
 
@@ -251,6 +264,14 @@ function createSocketServer(httpServer) {
 
                         break;
                     }
+
+                    case 'ping':
+                    {
+                        // Simple ping-pong to keep connection alive
+                        accept({ pong: true });
+                        break;
+                    }
+
                     default:
                         logger.info(`${method} method has no case handler`);
                         reject();
@@ -272,6 +293,33 @@ function createSocketServer(httpServer) {
                         const consumer = peer.consumers.get(consumerId);
 
                         await consumer.resume();
+                        
+                        break;
+                    }
+                    
+                    case 'mediaStateChanged':
+                    {
+                        const { type, enabled } = data;
+                        
+                        // Update peer's media state
+                        if (type === 'audio') {
+                            peer.audioEnabled = enabled;
+                        } else if (type === 'video') {
+                            peer.videoEnabled = enabled;
+                        }
+                        
+                        logger.info(`Peer ${peer.displayName} ${type} state changed to ${enabled ? 'enabled' : 'disabled'}`);
+                        
+                        // Forward this state change to all other peers in the same room
+                        for (const otherPeer of onlinePeers.values()) {
+                            if (otherPeer.id !== peer.id && otherPeer.roomId === peer.roomId) {
+                                otherPeer.socket.notify('peerMediaStateChanged', {
+                                    peerId: peer.id,
+                                    type,
+                                    enabled
+                                });
+                            }
+                        }
                         
                         break;
                     }

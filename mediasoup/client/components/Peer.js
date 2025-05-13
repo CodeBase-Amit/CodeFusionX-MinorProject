@@ -2,17 +2,25 @@ import React, {useRef, useState, useEffect} from "react";
 import Display from "./Display";
 import { useConsumer } from "../hooks/useConsumer";
 
-export default function Peer({peerId, displayName, srr, consumerTransport}){
+export default function Peer({peerId, displayName, srr, consumerTransport, audioEnabled = true, videoEnabled = true}){
     const [videoStatus, setVideoStatus] = useState("loading");
     const [remoteMediaState, setRemoteMediaState] = useState({
-        audio: true,
-        video: true
+        audio: audioEnabled,
+        video: videoEnabled
     });
     const videoRef = useRef(null);
     const audioRef = useRef(null);
 
     // Log when this component renders
-    console.log(`Rendering Peer component for ${peerId}`);
+    console.log(`Rendering Peer component for ${peerId} (audio: ${audioEnabled}, video: ${videoEnabled})`);
+    
+    // Update remote media state when props change
+    useEffect(() => {
+        setRemoteMediaState({
+            audio: audioEnabled,
+            video: videoEnabled
+        });
+    }, [audioEnabled, videoEnabled]);
 
     useEffect(() => {
         // Find audio element in DOM if not directly referenced
@@ -34,18 +42,12 @@ export default function Peer({peerId, displayName, srr, consumerTransport}){
             if (video.readyState >= 2 && !video.paused) {
                 console.log(`Video for ${displayName} is playing`);
                 setVideoStatus("playing");
-                // If video is playing, update remote state to reflect video is on
-                setRemoteMediaState(prev => ({...prev, video: true}));
             } else if (video.readyState === 0) {
                 console.log(`Video for ${displayName} is still loading`);
                 setVideoStatus("loading");
             } else if (video.paused) {
                 console.log(`Video for ${displayName} is paused`);
                 setVideoStatus("paused");
-                // When paused for a while, assume remote video might be off
-                if (videoStatus === "paused") {
-                    setRemoteMediaState(prev => ({...prev, video: false}));
-                }
             }
         };
         
@@ -59,23 +61,17 @@ export default function Peer({peerId, displayName, srr, consumerTransport}){
                 // Check video tracks
                 const videoTracks = stream.getVideoTracks();
                 if (videoTracks.length > 0) {
-                    const videoEnabled = videoTracks[0].enabled && videoTracks[0].readyState === 'live';
-                    setRemoteMediaState(prev => ({...prev, video: videoEnabled}));
-                    
                     // Add event listeners to track
                     videoTracks[0].addEventListener('mute', () => {
                         console.log(`Remote video track muted for ${displayName}`);
-                        setRemoteMediaState(prev => ({...prev, video: false}));
                     });
                     
                     videoTracks[0].addEventListener('unmute', () => {
                         console.log(`Remote video track unmuted for ${displayName}`);
-                        setRemoteMediaState(prev => ({...prev, video: true}));
                     });
                     
                     videoTracks[0].addEventListener('ended', () => {
                         console.log(`Remote video track ended for ${displayName}`);
-                        setRemoteMediaState(prev => ({...prev, video: false}));
                     });
                 }
             }
@@ -86,23 +82,17 @@ export default function Peer({peerId, displayName, srr, consumerTransport}){
                 // Check audio tracks
                 const audioTracks = stream.getAudioTracks();
                 if (audioTracks.length > 0) {
-                    const audioEnabled = audioTracks[0].enabled && audioTracks[0].readyState === 'live';
-                    setRemoteMediaState(prev => ({...prev, audio: audioEnabled}));
-                    
                     // Add event listeners
                     audioTracks[0].addEventListener('mute', () => {
                         console.log(`Remote audio track muted for ${displayName}`);
-                        setRemoteMediaState(prev => ({...prev, audio: false}));
                     });
                     
                     audioTracks[0].addEventListener('unmute', () => {
                         console.log(`Remote audio track unmuted for ${displayName}`);
-                        setRemoteMediaState(prev => ({...prev, audio: true}));
                     });
                     
                     audioTracks[0].addEventListener('ended', () => {
                         console.log(`Remote audio track ended for ${displayName}`);
-                        setRemoteMediaState(prev => ({...prev, audio: false}));
                     });
                 }
             }
