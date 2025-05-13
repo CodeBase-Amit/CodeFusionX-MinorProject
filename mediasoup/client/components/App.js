@@ -4,14 +4,18 @@ import { useWebSocket } from '../hooks/useWebSocket';
 import { useMediaSoup } from '../hooks/useMediaSoup';
 import Display from './Display';
 import Peer from './Peer';
-
+import '../styles/videoCall.css';
 
 export default function App({webSocketUrl}){
-
     const videoRef = useRef(null);
     
     // Initialize with a generated name to avoid empty state
     const [displayName, setDisplayName] = useState(generateName());
+    
+    // Media control states
+    const [isMuted, setIsMuted] = useState(false);
+    const [isVideoOff, setIsVideoOff] = useState(false);
+    const [isScreenSharing, setIsScreenSharing] = useState(false);
     
     useEffect(() => {
         // Parse URL parameters
@@ -25,26 +29,87 @@ export default function App({webSocketUrl}){
     }, []);
 
     const { peers, socket } = useWebSocket(webSocketUrl);
+    const { consumerTransport, toggleMute, toggleVideo, shareScreen, stopScreenShare } = useMediaSoup(socket, videoRef, displayName);
 
-    const { consumerTransport } = useMediaSoup(socket, videoRef, displayName);
+    // Handle control button clicks
+    const handleMuteToggle = () => {
+        setIsMuted(!isMuted);
+        if (toggleMute) toggleMute();
+    };
+    
+    const handleVideoToggle = () => {
+        setIsVideoOff(!isVideoOff);
+        if (toggleVideo) toggleVideo();
+    };
+    
+    const handleScreenShare = () => {
+        if (isScreenSharing) {
+            if (stopScreenShare) stopScreenShare();
+        } else {
+            if (shareScreen) shareScreen();
+        }
+        setIsScreenSharing(!isScreenSharing);
+    };
+    
+    const handleLeaveCall = () => {
+        window.close(); // Simple close window approach
+    };
 
     return (
-        <>      
-            <Display displayName={displayName + " (self)"} videoRef={videoRef} />
-            <hr/>
-            <div>
-                {
-                    peers.map(peer => (
+        <div className="video-call-container">
+            <div className="video-grid">
+                <div className="video-item self-video">
+                    <Display 
+                        displayName={displayName + " (self)"} 
+                        videoRef={videoRef} 
+                        isMuted={isMuted}
+                        isVideoOff={isVideoOff}
+                    />
+                </div>
+                
+                {peers.map(peer => (
+                    <div key={peer.id} className="video-item">
                         <Peer 
-                            key={peer.id} 
-                            peerId={peer.id}
+                            peerId={peer.id} 
                             displayName={peer.displayName} 
                             consumerTransport={consumerTransport} 
                             srr={socket} 
                         />
-                    ))
-                }
+                        {/* Hidden audio element for peer's audio */}
+                        <audio id={`audio-${peer.id}`} autoPlay playsInline className="hidden"></audio>
+                    </div>
+                ))}
             </div>
-        </>
+            
+            <div className="controls-container">
+                <button 
+                    className={`control-button ${isMuted ? 'active' : ''}`} 
+                    onClick={handleMuteToggle}
+                >
+                    <i className={`fas fa-${isMuted ? 'microphone-slash' : 'microphone'}`}></i>
+                </button>
+                
+                <button 
+                    className={`control-button ${isVideoOff ? 'active' : ''}`} 
+                    onClick={handleVideoToggle}
+                >
+                    <i className={`fas fa-${isVideoOff ? 'video-slash' : 'video'}`}></i>
+                </button>
+                
+                <button 
+                    className={`control-button ${isScreenSharing ? 'screen-share-active' : ''}`} 
+                    onClick={handleScreenShare}
+                >
+                    <i className="fas fa-desktop"></i>
+                </button>
+                
+                <button 
+                    className="control-button leave-call" 
+                    onClick={handleLeaveCall}
+                >
+                    <i className="fas fa-phone-slash"></i>
+                </button>
+            </div>
+        </div>
     );
 }

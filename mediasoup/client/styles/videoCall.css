@@ -1,0 +1,265 @@
+/* Video Call UI Styles */
+:root {
+  --primary-color: #4a69bd;
+  --secondary-color: #6a89cc;
+  --danger-color: #e84118;
+  --success-color: #44bd32;
+  --light-bg: #f5f6fa;
+  --dark-bg: #2f3542;
+  --text-color: #f5f6fa;
+  --border-radius: 8px;
+  --shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* Main container */
+.video-call-container {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  width: 100%;
+  background-color: var(--dark-bg);
+  overflow: hidden;
+  position: relative;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+/* Video grid layout */
+.video-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 16px;
+  padding: 16px;
+  flex: 1;
+  overflow-y: auto;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Individual video items */
+.video-item {
+  background-color: #1e2021;
+  border-radius: var(--border-radius);
+  overflow: hidden;
+  position: relative;
+  box-shadow: var(--shadow);
+  transition: transform 0.3s ease;
+  aspect-ratio: 16/9;
+  max-height: 70vh;
+}
+
+.video-item:hover {
+  transform: scale(1.02);
+}
+
+/* Self video (larger) */
+.self-video {
+  grid-column: 1;
+  grid-row: 1;
+}
+
+/* Controls container */
+.controls-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 16px;
+  background-color: rgba(0, 0, 0, 0.5);
+  gap: 16px;
+  position: sticky;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 100;
+}
+
+/* Control buttons */
+.control-button {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  border: none;
+  background-color: var(--secondary-color);
+  color: var(--text-color);
+  font-size: 20px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+.control-button:hover {
+  transform: scale(1.1);
+  background-color: var(--primary-color);
+}
+
+.control-button.active {
+  background-color: #718093;
+}
+
+.control-button.leave-call {
+  background-color: var(--danger-color);
+}
+
+.control-button.leave-call:hover {
+  background-color: #c23616;
+}
+
+.control-button.screen-share-active {
+  background-color: var(--success-color);
+}
+
+/* Media status badges */
+.media-status {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background-color: rgba(0, 0, 0, 0.6);
+  border-radius: 4px;
+  padding: 4px;
+  display: flex;
+  gap: 8px;
+}
+
+.status-icon {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background-color: var(--secondary-color);
+  color: var(--text-color);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+}
+
+.status-icon.disabled {
+  background-color: var(--danger-color);
+}
+
+/* Name display */
+.participant-name {
+  position: absolute;
+  bottom: 8px;
+  left: 8px;
+  padding: 4px 8px;
+  background-color: rgba(0, 0, 0, 0.6);
+  color: var(--text-color);
+  border-radius: 4px;
+  font-size: 14px;
+  max-width: 80%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Video placeholder styles */
+.video-placeholder {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #2c3e50;
+  font-size: 48px;
+  color: var(--text-color);
+  z-index: 1;
+}
+
+/* Make sure video elements cover the container properly */
+video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .video-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .control-button {
+    width: 40px;
+    height: 40px;
+    font-size: 16px;
+  }
+  
+  .self-video {
+    grid-column: auto;
+    grid-row: auto;
+  }
+}
+
+/* For landscape mobile orientation */
+@media (max-height: 500px) {
+  .video-grid {
+    height: 65vh;
+  }
+  
+  .controls-container {
+    padding: 8px;
+  }
+  
+  .control-button {
+    width: 36px;
+    height: 36px;
+    font-size: 14px;
+  }
+}
+
+/* Animation for status indicators */
+@keyframes pulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.1); }
+  100% { transform: scale(1); }
+}
+
+.status-icon.active {
+  animation: pulse 2s infinite;
+}
+
+/* Loading and error states */
+.loading-indicator {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  color: var(--text-color);
+  z-index: 2;
+  background-color: rgba(0, 0, 0, 0.7);
+  padding: 12px 24px;
+  border-radius: var(--border-radius);
+}
+
+.error-message {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  color: var(--danger-color);
+  z-index: 2;
+  background-color: rgba(0, 0, 0, 0.7);
+  padding: 12px 24px;
+  border-radius: var(--border-radius);
+}
+
+/* Screen sharing indicator */
+.screen-sharing-indicator {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  background-color: var(--success-color);
+  color: var(--text-color);
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: bold;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+} 

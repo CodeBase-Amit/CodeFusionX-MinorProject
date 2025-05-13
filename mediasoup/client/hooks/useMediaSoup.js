@@ -3,30 +3,39 @@ import * as mediasoup from 'mediasoup-client';
 
 export function useMediaSoup(socket, videoRef, displayName) {
     const [consumerTransport, setConsumerTransport] = useState(null);
+    const [videoProducer, setVideoProducer] = useState(null);
+    const [audioProducer, setAudioProducer] = useState(null);
+    const [screenProducer, setScreenProducer] = useState(null);
+    const [producerTransport, setProducerTransport] = useState(null);
+    const [device, setDevice] = useState(null);
+    const [videoTrack, setVideoTrack] = useState(null);
+    const [audioTrack, setAudioTrack] = useState(null);
 
     useEffect(() => {
         if(!socket || !displayName) return;
         
-        let device = null;
-        let producerTransport = null;
-        let consumerTransport = null;
+        let localDevice = null;
+        let localProducerTransport = null;
+        let localConsumerTransport = null;
 
         console.log("Setting up MediaSoup with displayName:", displayName);
 
         // Clean up function to close transports when component unmounts or displayName changes
         const cleanup = () => {
-            if(producerTransport) {
-                producerTransport.close();
+            if(localProducerTransport) {
+                localProducerTransport.close();
             }
-            if(consumerTransport) {
-                consumerTransport.close();
+            if(localConsumerTransport) {
+                localConsumerTransport.close();
             }
         };
     
         setupMediasoup()
         .then(()=> {
             console.log("MediaSoup setup completed successfully");
-            setConsumerTransport(consumerTransport);
+            setConsumerTransport(localConsumerTransport);
+            setProducerTransport(localProducerTransport);
+            setDevice(localDevice);
         })
         .catch((error)=>{
             console.log('Error while starting MediaSoup: ', error);
@@ -48,8 +57,8 @@ export function useMediaSoup(socket, videoRef, displayName) {
         
         async function loadDevice(routerRtpCapabilities) {
             console.log("Loading MediaSoup device");
-            device = new mediasoup.Device();
-            await device.load({ routerRtpCapabilities });
+            localDevice = new mediasoup.Device();
+            await localDevice.load({ routerRtpCapabilities });
             console.log("MediaSoup device loaded successfully");
         }
         
@@ -57,27 +66,27 @@ export function useMediaSoup(socket, videoRef, displayName) {
             console.log("Creating producer transport");
             const data = await socket.request('createProducerTransport');
         
-            producerTransport = device.createSendTransport(data);
-            producerTransport.on('connect', async ({ dtlsParameters }, callback, errback) => {
+            localProducerTransport = localDevice.createSendTransport(data);
+            localProducerTransport.on('connect', async ({ dtlsParameters }, callback, errback) => {
                 console.log("Connecting producer transport");
                 socket.request('connectProducerTransport', { dtlsParameters })
                     .then(callback)
                     .catch(errback);
             });
             
-            producerTransport.on('connectionstatechange', (state) => {
+            localProducerTransport.on('connectionstatechange', (state) => {
                 console.log(`Producer transport connection state changed to: ${state}`);
                 if (state == 'failed') {
-                    producerTransport.close();
+                    localProducerTransport.close();
                     console.log('Producer transport connection failed');
                 }
             });
         
-            producerTransport.on('produce', async ({ kind, rtpParameters }, callback, errback) => {
+            localProducerTransport.on('produce', async ({ kind, rtpParameters }, callback, errback) => {
                 try {
                     console.log(`Producing ${kind}`);
                     const { id } = await socket.request('produce', {
-                        transportId : producerTransport.id,
+                        transportId : localProducerTransport.id,
                         kind,
                         rtpParameters
                     });
@@ -94,19 +103,19 @@ export function useMediaSoup(socket, videoRef, displayName) {
             console.log("Creating consumer transport");
             const data = await socket.request('createConsumerTransport');
         
-            consumerTransport = device.createRecvTransport(data);
+            localConsumerTransport = localDevice.createRecvTransport(data);
         
-            consumerTransport.on('connect', ({ dtlsParameters }, callback, errback) => {
+            localConsumerTransport.on('connect', ({ dtlsParameters }, callback, errback) => {
                 console.log("Connecting consumer transport");
                 socket.request('connectConsumerTransport', { dtlsParameters })
                     .then(callback)
                     .catch(errback);
             });
         
-            consumerTransport.on('connectionstatechange', async (state) => {
+            localConsumerTransport.on('connectionstatechange', async (state) => {
                 console.log(`Consumer transport connection state changed to: ${state}`);
                 if (state == 'failed') {
-                    consumerTransport.close();
+                    localConsumerTransport.close();
                     console.error('Consumer transport connection failed');
                 }
                 
@@ -115,7 +124,7 @@ export function useMediaSoup(socket, videoRef, displayName) {
         
         async function join() {
             console.log(`Joining room with displayName: ${displayName}`);
-            const { rtpCapabilities } = device;
+            const { rtpCapabilities } = localDevice;
             
             // Get URL parameters for roomId
             const params = new URLSearchParams(window.location.search);
@@ -139,16 +148,18 @@ export function useMediaSoup(socket, videoRef, displayName) {
                 const producers = [];
                 
                 // Produce video and audio sequentially
-                const videoProducer = await produceUserVideo();
-                if (videoProducer) {
+                const vProducer = await produceUserVideo();
+                if (vProducer) {
                     console.log("Video producer successful");
-                    producers.push(videoProducer);
+                    producers.push(vProducer);
+                    setVideoProducer(vProducer);
                 }
                 
-                const audioProducer = await produceUserAudio();
-                if (audioProducer) {
+                const aProducer = await produceUserAudio();
+                if (aProducer) {
                     console.log("Audio producer successful");
-                    producers.push(audioProducer);
+                    producers.push(aProducer);
+                    setAudioProducer(aProducer);
                 }
                 
                 console.log(`Media streams published successfully (${producers.length} producers)`);
@@ -159,7 +170,7 @@ export function useMediaSoup(socket, videoRef, displayName) {
         }
         
         async function produceUserVideo() {
-            if (!device.canProduce('video')) {
+            if (!localDevice.canProduce('video')) {
                 throw Error('Cannot produce video');
             }
         
@@ -172,6 +183,7 @@ export function useMediaSoup(socket, videoRef, displayName) {
                 } 
             });
             const track = stream.getVideoTracks()[0];
+            setVideoTrack(track);
 
             const video = videoRef.current;
             if (!video) {
@@ -181,7 +193,7 @@ export function useMediaSoup(socket, videoRef, displayName) {
 
             video.srcObject = stream;
             console.log("Video stream attached to video element");
-
+        
             // Check track details for debugging
             console.log("Video track details:", {
                 enabled: track.enabled,
@@ -189,8 +201,8 @@ export function useMediaSoup(socket, videoRef, displayName) {
                 muted: track.muted,
                 constraints: track.getConstraints()
             });
-
-            const producer = await producerTransport.produce({ track });
+        
+            const producer = await localProducerTransport.produce({ track });
             console.log("Video producer created successfully with ID:", producer.id);
             
             // Set up producer event handlers
@@ -219,7 +231,7 @@ export function useMediaSoup(socket, videoRef, displayName) {
         }
         
         async function produceUserAudio() {
-            if (!device.canProduce('audio')) {
+            if (!localDevice.canProduce('audio')) {
                 throw Error('Cannot produce audio');
             }
         
@@ -232,6 +244,7 @@ export function useMediaSoup(socket, videoRef, displayName) {
                 } 
             });
             const track = stream.getAudioTracks()[0];
+            setAudioTrack(track);
             
             // Check track details for debugging
             console.log("Audio track details:", {
@@ -241,7 +254,7 @@ export function useMediaSoup(socket, videoRef, displayName) {
                 constraints: track.getConstraints()
             });
             
-            const producer = await producerTransport.produce({ track });
+            const producer = await localProducerTransport.produce({ track });
             console.log("Audio producer created successfully with ID:", producer.id);
             
             // Set up producer event handlers
@@ -274,8 +287,104 @@ export function useMediaSoup(socket, videoRef, displayName) {
 
     }, [socket, displayName]); // Add displayName as a dependency
 
+    // Toggle mute on local audio track
+    const toggleMute = () => {
+        if (audioTrack) {
+            audioTrack.enabled = !audioTrack.enabled;
+            console.log(`Audio ${audioTrack.enabled ? 'unmuted' : 'muted'}`);
+            return audioTrack.enabled;
+        }
+        return false;
+    };
+    
+    // Toggle video on/off
+    const toggleVideo = () => {
+        if (videoTrack) {
+            videoTrack.enabled = !videoTrack.enabled;
+            console.log(`Video ${videoTrack.enabled ? 'enabled' : 'disabled'}`);
+            return videoTrack.enabled;
+        }
+        return false;
+    };
+    
+    // Screen sharing functionality
+    const shareScreen = async () => {
+        if (!producerTransport || !device) return false;
+        
+        try {
+            // Get screen sharing stream
+            const stream = await navigator.mediaDevices.getDisplayMedia({ 
+                video: true,
+                audio: false
+            });
+            
+            const track = stream.getVideoTracks()[0];
+            
+            // Replace video track in the video element
+            if (videoRef.current) {
+                const oldStream = videoRef.current.srcObject;
+                const newStream = new MediaStream([track]);
+                
+                // If there's an audio track, add it to the new stream
+                if (oldStream) {
+                    const audioTracks = oldStream.getAudioTracks();
+                    if (audioTracks.length > 0) {
+                        newStream.addTrack(audioTracks[0]);
+                    }
+                }
+                
+                videoRef.current.srcObject = newStream;
+            }
+            
+            // Create a new producer for screen sharing
+            const producer = await producerTransport.produce({ track });
+            
+            // Set up event handlers
+            track.addEventListener('ended', () => {
+                console.log('Screen sharing ended by user');
+                stopScreenShare();
+            });
+            
+            setScreenProducer(producer);
+            console.log("Screen sharing started");
+            return true;
+        } catch (error) {
+            console.error("Error sharing screen:", error);
+            return false;
+        }
+    };
+    
+    // Stop screen sharing
+    const stopScreenShare = async () => {
+        if (screenProducer) {
+            screenProducer.close();
+            setScreenProducer(null);
+            
+            // Restore video track
+            if (videoRef.current && videoTrack) {
+                const newStream = new MediaStream([videoTrack]);
+                
+                // If there's an audio track, add it to the new stream
+                if (audioTrack) {
+                    newStream.addTrack(audioTrack);
+                }
+                
+                videoRef.current.srcObject = newStream;
+            }
+            
+            console.log("Screen sharing stopped");
+            return true;
+        }
+        return false;
+    };
+
     return {
-        consumerTransport
-    }
+        consumerTransport,
+        toggleMute,
+        toggleVideo,
+        shareScreen,
+        stopScreenShare,
+        isScreenSharing: !!screenProducer
+    };
 }
 

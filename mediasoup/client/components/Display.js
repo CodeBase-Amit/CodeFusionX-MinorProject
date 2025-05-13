@@ -1,6 +1,13 @@
 import React, { useEffect } from "react";
 
-export default function Display({displayName, videoRef, videoStatus = "ready", style}) {
+export default function Display({
+    displayName, 
+    videoRef, 
+    videoStatus = "ready", 
+    isMuted = false,
+    isVideoOff = false,
+    style
+}) {
     useEffect(() => {
         // When video element is available
         if (videoRef && videoRef.current) {
@@ -24,71 +31,59 @@ export default function Display({displayName, videoRef, videoStatus = "ready", s
         }
     }, [videoRef, displayName]);
 
-    // Render different UI based on video status
-    const renderVideoStatus = () => {
-        if (videoStatus === "loading") {
-            return (
-                <div style={{
-                    position: 'absolute', 
-                    top: '50%', 
-                    left: '50%', 
-                    transform: 'translate(-50%, -50%)',
-                    color: 'white',
-                    fontSize: '14px',
-                    background: 'rgba(0,0,0,0.5)',
-                    padding: '5px 10px',
-                    borderRadius: '4px'
-                }}>
-                    Loading video...
-                </div>
-            );
-        }
-        
-        if (videoStatus === "paused") {
-            return (
-                <div style={{
-                    position: 'absolute', 
-                    top: '50%', 
-                    left: '50%', 
-                    transform: 'translate(-50%, -50%)',
-                    color: 'white',
-                    fontSize: '14px',
-                    background: 'rgba(0,0,0,0.5)',
-                    padding: '5px 10px',
-                    borderRadius: '4px'
-                }}>
-                    Video paused
-                </div>
-            );
-        }
-        
-        return null;
-    };
+    // Format display name - remove (self) suffix for UI display
+    const formattedName = displayName.replace(" (self)", "");
+    const isSelf = displayName.includes("(self)");
+    
+    // Initial letter for the placeholder
+    const initial = formattedName.charAt(0).toUpperCase();
 
     return (
-        <>
-            <div style={style}>
-                <div style={{textAlign: "center", fontWeight: "bold", padding: "5px"}}>
-                    {displayName}
+        <div className="video-frame" style={style}>
+            {/* Media status indicators */}
+            <div className="media-status">
+                <div className={`status-icon ${!isMuted ? 'active' : 'disabled'}`}>
+                    <i className={`fas fa-${isMuted ? 'microphone-slash' : 'microphone'}`}></i>
                 </div>
-                <div style={{
-                    height: "200px", 
-                    width: "96%", 
-                    margin: "0px auto", 
-                    backgroundColor: "#f0f0f0", 
-                    borderRadius: "8px", 
-                    overflow: "hidden",
-                    position: "relative"
-                }}>
-                    <video 
-                        ref={videoRef} 
-                        autoPlay 
-                        playsInline 
-                        style={{width: "100%", height: "100%", objectFit: "cover"}}
-                    ></video>
-                    {renderVideoStatus()}
+                <div className={`status-icon ${!isVideoOff ? 'active' : 'disabled'}`}>
+                    <i className={`fas fa-${isVideoOff ? 'video-slash' : 'video'}`}></i>
                 </div>
             </div>
-        </>
-    )
+            
+            {/* Participant name */}
+            <div className="participant-name">
+                {formattedName} {isSelf && <span>(You)</span>}
+            </div>
+            
+            {/* Video placeholder when video is off */}
+            {isVideoOff && (
+                <div className="video-placeholder">
+                    <span className="initial-avatar">{initial}</span>
+                </div>
+            )}
+            
+            {/* Status overlays */}
+            {videoStatus === "loading" && !isVideoOff && (
+                <div className="loading-indicator">
+                    <div className="spinner"></div>
+                    <span>Connecting...</span>
+                </div>
+            )}
+            
+            {videoStatus === "paused" && !isVideoOff && (
+                <div className="error-message">
+                    <i className="fas fa-exclamation-triangle"></i>
+                    <span>Video paused</span>
+                </div>
+            )}
+            
+            {/* Video element */}
+            <video 
+                ref={videoRef} 
+                autoPlay 
+                playsInline 
+                className={isVideoOff ? 'hidden' : ''}
+            ></video>
+        </div>
+    );
 }
