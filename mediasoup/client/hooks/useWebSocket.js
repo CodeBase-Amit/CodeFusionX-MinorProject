@@ -13,35 +13,36 @@ export function useWebSocket(webSocketUrl) {
     }
 
     const params = new URLSearchParams(window.location.search);
-    const roomId = params.get("roomId");
+    const roomId = params.get("roomId") || "default-room";
     const username = params.get("username") || "User-" + Math.floor(Math.random() * 1000);
 
-    console.log("🚀 roomId:", roomId, "username:", username);  // ✅ Confirm iframe params aa rahe hain ya nahi
+    console.log("WebSocket connecting to:", webSocketUrl);
+    console.log("Room parameters:", {roomId, username});
 
     SockRR(webSocketUrl)
       .then((srr) => {
-        srr.request("join", {
-          roomId: roomId,
-          displayName: username,
-          rtpCapabilities: {}
-        }).then((data) => {
-          console.log("✅ Joined Room. Peers: ", data.peers);
-        });
-
+        console.log("WebSocket connection established");
+        
+        setSocket(srr);
+        
         srr.onNotification((method, data = {}) => {
           switch (method) {
             case 'peerJoined':
+              console.log(`Peer joined: ${data.displayName} (${data.id})`);
               onlinePeers.set(data.id, data);
               updatePeersState();
               break;
             case 'peerLeft':
+              console.log(`Peer left: ${data.id}`);
               onlinePeers.delete(data.id);
               updatePeersState();
               break;
             case 'setAvailablePeers':
               onlinePeers.clear();
               const { otherPeerDetails } = data;
+              console.log(`Received ${otherPeerDetails.length} available peers`);
               for (const otherPeer of otherPeerDetails) {
+                console.log(`Available peer: ${otherPeer.displayName} (${otherPeer.id})`);
                 onlinePeers.set(otherPeer.id, otherPeer);
               }
               updatePeersState();
@@ -52,10 +53,8 @@ export function useWebSocket(webSocketUrl) {
         });
 
         srr.onClose(() => {
-          console.error('web socket connection closed');
+          console.error('WebSocket connection closed');
         });
-
-        setSocket(srr);
       })
       .catch((e) => {
         console.error('Error connecting to server: ', e);

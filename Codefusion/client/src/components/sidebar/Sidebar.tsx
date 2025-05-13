@@ -60,14 +60,14 @@ function Sidebar() {
                     viewName={VIEWS.CHATS}
                     icon={viewIcons[VIEWS.CHATS]}
                 />
-                <SidebarButton
+                {/* <SidebarButton
                     viewName={VIEWS.COPILOT}
                     icon={viewIcons[VIEWS.COPILOT]}
-                />
-                <SidebarButton
+                /> */}
+                {/* <SidebarButton
                     viewName={VIEWS.RUN}
                     icon={viewIcons[VIEWS.RUN]}
-                />
+                /> */}
                 <SidebarButton
                     viewName={VIEWS.CLIENTS}
                     icon={viewIcons[VIEWS.CLIENTS]}

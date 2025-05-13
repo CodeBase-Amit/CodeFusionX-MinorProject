@@ -54,6 +54,14 @@ function createHttpServer() {
     
     const app = express();
 
+    // Add CORS headers for iframe embedding
+    app.use((req, res, next) => {
+        res.header('Access-Control-Allow-Origin', '*');
+        res.header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+        res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept');
+        next();
+    });
+
     app.use(express.static(path.resolve(process.cwd(), 'public')));
     
     return app.listen(port, () => {
@@ -174,43 +182,65 @@ function createSocketServer(httpServer) {
                         
                         if (!otherPeer) return reject('invalid peer');
 
+                        // Make sure peers are in the same room
+                        if (otherPeer.roomId !== peer.roomId) {
+                            logger.warn(`Peer ${peer.displayName} tried to consume from peer ${otherPeer.displayName} in different room`);
+                            return reject('peer is in different room');
+                        }
+
+                        logger.info(`Peer ${peer.displayName} is consuming from peer ${otherPeer.displayName} in room ${peer.roomId}`);
+                        
                         const consumerDetailsArray = [];
-    
+
+                        // Log the producer count for debugging
+                        const producerCount = otherPeer.producers ? otherPeer.producers.size : 0;
+                        logger.info(`Found ${producerCount} producers from peer ${otherPeer.displayName}`);
+
                         // Create Consumers for existing Producers of otherPeer.
                         for (const producer of otherPeer.producers.values()) {
-                            const consumerDetails = await createConsumer(peer, producer);
-    
-                            consumerDetailsArray.push(consumerDetails);
+                            try {
+                                logger.info(`Creating consumer for producer ${producer.id} (${producer.kind}) from peer ${otherPeer.displayName}`);
+                                const consumerDetails = await createConsumer(peer, producer);
+                                logger.info(`Successfully created consumer ${consumerDetails.id} for producer ${producer.id}`);
+                                consumerDetailsArray.push(consumerDetails);
+                            } catch (error) {
+                                logger.error(`Error creating consumer for producer ${producer.id}: ${error.message}`);
+                                // Continue with other producers even if one fails
+                            }
                         }
                             
+                        logger.info(`Sending ${consumerDetailsArray.length} consumer details to peer ${peer.displayName}`);
                         accept({ consumerDetailsArray });
-    
+
                         break;
                     }
 
                     case 'join':
                     {
-                        const { rtpCapabilities, displayName } = data;
+                        const { rtpCapabilities, displayName, roomId } = data;
 
                         peer.rtpCapabilities = rtpCapabilities;
                         peer.displayName = displayName;
+                        peer.roomId = roomId || 'default-room';
                         onlinePeers.set(peer.id, peer);
-                        logger.info(`${displayName} joined`);
+                        logger.info(`${displayName} joined with ID: ${peer.id} in room: ${peer.roomId}`);
 
                         accept();
 
                         const otherPeerDetails = [];
 
-                        // notify other peers that this peer joined 
+                        // notify other peers that this peer joined (only peers in the same room)
                         for (const otherPeer of onlinePeers.values()) {
-                            if (otherPeer.id !== peer.id) {
+                            if (otherPeer.id !== peer.id && otherPeer.roomId === peer.roomId) {
+                                logger.info(`Notifying peer ${otherPeer.displayName} that ${displayName} joined room ${peer.roomId}`);
                                 otherPeer.socket.notify('peerJoined', { id: peer.id, displayName });
                                 
                                 otherPeerDetails.push({ id: otherPeer.id, displayName: otherPeer.displayName });
                             }
                         }
 
-                        // and also notify this peer of all other available peers
+                        // and also notify this peer of all other available peers in the same room
+                        logger.info(`Notifying ${displayName} about ${otherPeerDetails.length} other peers in room ${peer.roomId}`);
                         peer.socket.notify('setAvailablePeers', { otherPeerDetails });
 
                         // if there is no recording in progress then initiate recording
@@ -321,10 +351,14 @@ async function createConsumer(peer, producer) {
         throw Error('can not consume from producer');
     }
     
+    // Log detailed info about the producer
+    logger.info(`Creating consumer for producer: ${producer.id}, kind: ${producer.kind}, peer: ${peer.displayName}`);
+    
+    // Create consumer with paused: false for both video and audio
     const consumer = await consumerTransport.consume({
         producerId      : producer.id,
         rtpCapabilities : rtpCapabilities,
-        paused          : producer.kind === 'video'
+        paused          : false
     });
 
     peer.consumers.set(consumer.id, consumer);
@@ -344,13 +378,14 @@ async function createConsumer(peer, producer) {
         peer.consumers.delete(consumer.id);
     });
 
+    logger.info(`Consumer created successfully for ${producer.kind} with ID: ${consumer.id}`);
+
     return {
         producerId    : producer.id,
         id            : consumer.id,
         kind          : consumer.kind,
         rtpParameters : consumer.rtpParameters
     };
-
 }
 
 async function createWebRtcTransport() {
