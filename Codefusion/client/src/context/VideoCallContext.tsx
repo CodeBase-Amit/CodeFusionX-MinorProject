@@ -11,6 +11,7 @@ interface VideoCallContextType {
   toggleVideoCall: () => void;
   isVideoCallVisible: boolean;
   videoCallUrl: string;
+  backgroundVideoCallUrl: string;
 }
 
 const VideoCallContext = createContext<VideoCallContextType | null>(null);
@@ -33,8 +34,11 @@ export const VideoCallProvider = ({ children }: { children: ReactNode }) => {
   const iframeLoaded = useRef(false);
   const audioContextRef = useRef<AudioContext | null>(null);
 
-  // URL for the video call
-  const videoCallUrl = `http://localhost:3030?roomId=${roomId}&username=${encodeURIComponent(currentUser.username)}`;
+  // URL for the video call - visible UI version
+  const videoCallUrl = `http://localhost:3030?roomId=${roomId}&username=${encodeURIComponent(currentUser.username)}&mode=ui`;
+
+  // URL for the background connection - non-UI version (minimal UI)
+  const backgroundVideoCallUrl = `http://localhost:3030?roomId=${roomId}&username=${encodeURIComponent(currentUser.username)}&mode=background`;
 
   // Define functions with useCallback to avoid dependency issues
   const stopVideoCall = useCallback(() => {
@@ -132,7 +136,7 @@ export const VideoCallProvider = ({ children }: { children: ReactNode }) => {
     if (!iframeLoaded.current && iframeRef.current) {
       // Set the source only once to prevent reloading
       if (!iframeRef.current.src || iframeRef.current.src === 'about:blank') {
-        iframeRef.current.src = videoCallUrl;
+        iframeRef.current.src = backgroundVideoCallUrl;
       }
       iframeLoaded.current = true;
     }
@@ -174,7 +178,7 @@ export const VideoCallProvider = ({ children }: { children: ReactNode }) => {
       clearInterval(pingInterval);
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
-  }, [isVideoCallActive, videoCallUrl]);
+  }, [isVideoCallActive, backgroundVideoCallUrl]);
 
   // Clean up when component unmounts or when leaving a room
   useEffect(() => {
@@ -193,7 +197,8 @@ export const VideoCallProvider = ({ children }: { children: ReactNode }) => {
         stopVideoCall,
         isVideoCallVisible,
         toggleVideoCall,
-        videoCallUrl
+        videoCallUrl,
+        backgroundVideoCallUrl
       }}
     >
       {children}

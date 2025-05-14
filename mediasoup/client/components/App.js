@@ -16,16 +16,21 @@ export default function App({webSocketUrl}){
     const [isMuted, setIsMuted] = useState(false);
     const [isVideoOff, setIsVideoOff] = useState(false);
     const [isScreenSharing, setIsScreenSharing] = useState(false);
+    const [mode, setMode] = useState('ui'); // Default to UI mode
     
     useEffect(() => {
         // Parse URL parameters
         const urlParams = new URLSearchParams(window.location.search);
         const username = urlParams.get('username');
+        const urlMode = urlParams.get('mode') || 'ui';
         
         // Use the username from URL if available
         if (username) {
             setDisplayName(username);
         }
+        
+        // Set the mode
+        setMode(urlMode);
     }, []);
 
     const { peers, socket } = useWebSocket(webSocketUrl);
@@ -54,7 +59,19 @@ export default function App({webSocketUrl}){
     const handleLeaveCall = () => {
         window.close(); // Simple close window approach
     };
+    
+    // If in background mode, only render the minimal necessary components
+    if (mode === 'background') {
+        return (
+            <div className="background-mode">
+                <div style={{ display: 'none' }}>
+                    <video ref={videoRef} autoPlay muted playsInline></video>
+                </div>
+            </div>
+        );
+    }
 
+    // Otherwise render the full UI
     return (
         <div className="video-call-container">
             <div className="video-grid">

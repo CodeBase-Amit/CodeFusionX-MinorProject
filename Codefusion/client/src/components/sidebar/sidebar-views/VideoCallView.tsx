@@ -6,13 +6,22 @@ function VideoCallView() {
   const { viewHeight } = useResponsive()
   const { isVideoCallActive, videoCallUrl } = useVideoCall()
   const viewIframeRef = useRef<HTMLIFrameElement>(null)
+  const iframeLoaded = useRef(false)
 
-  // Initialize the view iframe when component mounts
+  // Initialize the view iframe when component mounts or becomes visible
   useEffect(() => {
-    if (isVideoCallActive && viewIframeRef.current) {
-      // For the view iframe, we want to reload it each time it's shown
-      // This ensures it displays the current state of the video call
+    if (isVideoCallActive && viewIframeRef.current && !iframeLoaded.current) {
+      // Load the UI version of the video call only if not already loaded
       viewIframeRef.current.src = videoCallUrl
+      iframeLoaded.current = true
+    }
+
+    return () => {
+      // Don't actually unload the iframe when unmounting
+      // Just mark it as not loaded for next time
+      if (viewIframeRef.current) {
+        iframeLoaded.current = false
+      }
     }
   }, [isVideoCallActive, videoCallUrl])
 
