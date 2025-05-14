@@ -72,6 +72,21 @@ select {
     cursor: pointer;
 }
 
+/* Video Call Container */
+.video-call-iframe-container {
+    transition: opacity 0.3s ease-in-out;
+}
+
+.video-call-iframe-container.hidden {
+    pointer-events: none;
+}
+
+.video-call-iframe-container iframe {
+    border: none;
+    width: 100%;
+    height: 100%;
+}
+
 @media screen and (max-width: 768px) {
     .cm-editor {
         max-height: calc(93vh - 60px);

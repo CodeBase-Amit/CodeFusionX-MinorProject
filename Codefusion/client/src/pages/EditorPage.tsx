@@ -4,6 +4,7 @@ import Sidebar from "@/components/sidebar/Sidebar"
 import WorkSpace from "@/components/workspace"
 import { useAppContext } from "@/context/AppContext"
 import { useSocket } from "@/context/SocketContext"
+import { VideoCallProvider } from "@/context/VideoCallContext"
 import useFullScreen from "@/hooks/useFullScreen"
 import useUserActivity from "@/hooks/useUserActivity"
 import { SocketEvent } from "@/types/socket"
@@ -48,10 +49,12 @@ function EditorPage() {
     }
 
     return (
-        <SplitterComponent>
-            <Sidebar />
-            <WorkSpace/>
-        </SplitterComponent>
+        <VideoCallProvider>
+            <SplitterComponent>
+                <Sidebar />
+                <WorkSpace/>
+            </SplitterComponent>
+        </VideoCallProvider>
     )
 }
 

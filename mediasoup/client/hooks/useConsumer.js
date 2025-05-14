@@ -80,7 +80,7 @@ export function useConsumer(peerId, displayName, srr, consumerTransport, videoRe
             
                 for (const consumerDetails of consumerDetailsArray) {
                     const { producerId, id, kind, rtpParameters } = consumerDetails;
-                    
+            
                     console.log(`Processing consumer for ${kind} from peer ${peerId}`);
                     console.log(`Consumer details:`, { id, kind, producerId });
             
@@ -94,23 +94,23 @@ export function useConsumer(peerId, displayName, srr, consumerTransport, videoRe
                         
                         console.log(`Created consumer for ${kind} from peer ${peerId}`, consumer);
                         addActiveConsumer(consumer);
-                                                
-                        const stream = new MediaStream();
-                        stream.addTrack(consumer.track);
+                                            
+                    const stream = new MediaStream();
+                    stream.addTrack(consumer.track);
                         
                         console.log(`Created MediaStream for ${kind} with track:`, consumer.track);
-                
-                        if (kind === 'video') {
-                            const video = videoRef.current;
-        
-                            // if video element is null, log an error and return
+            
+                    if (kind === 'video') {
+                        const video = videoRef.current;
+    
+                        // if video element is null, log an error and return
                             if (!video) {
                                 console.error(`useConsumer | error: invalid video element for "${displayName}"`);
                                 continue;
                             }
-        
+    
                             console.log(`Setting video srcObject for ${displayName}`);
-                            video.srcObject = stream;
+                        video.srcObject = stream;
                             video.autoplay = true;
                             video.muted = false;
                             
@@ -136,10 +136,10 @@ export function useConsumer(peerId, displayName, srr, consumerTransport, videoRe
                                     console.error("Even muted video playback failed:", e);
                                 }
                             }
-                                
-                            // resume the paused consumers
+                            
+                        // resume the paused consumers
                             console.log(`Resuming consumer ${id} for peer ${peerId}`);
-                            srr.notify('resumeConsumer', { consumerId: id });
+                        srr.notify('resumeConsumer', { consumerId: id });
                             console.log(`Resumed consumer ${id} for peer ${peerId}`);
 
                             // Check if video is actually playing
@@ -152,18 +152,18 @@ export function useConsumer(peerId, displayName, srr, consumerTransport, videoRe
                                     console.log(`Video for ${displayName} is playing successfully`);
                                 }
                             }, 2000);
-        
-                        } else if (kind === 'audio') {
-                            const audio = audioRef.current;
-        
-                            // if audio element is null, log an error and return
+    
+                    } else if (kind === 'audio') {
+                        const audio = audioRef.current;
+    
+                        // if audio element is null, log an error and return
                             if (!audio) {
                                 console.error(`useConsumer | error: invalid audio element for "${displayName}"`);
                                 continue;
                             }
-        
+    
                             console.log(`Setting audio srcObject for ${displayName}`);
-                            audio.srcObject = stream;
+                        audio.srcObject = stream;
                             audio.autoplay = true;
                             
                             try {
@@ -172,7 +172,7 @@ export function useConsumer(peerId, displayName, srr, consumerTransport, videoRe
                             } catch (error) {
                                 console.error(`Audio play failed for ${displayName}:`, error.message);
                             }
-                        }
+                    }
                     } catch (error) {
                         console.error(`Error consuming ${kind} from peer ${peerId}:`, error);
                     }

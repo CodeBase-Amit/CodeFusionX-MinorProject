@@ -30,6 +30,15 @@ function AppContextProvider({ children }: { children: ReactNode }) {
     )
     const [drawingData, setDrawingData] = useState<DrawingData>(null)
 
+    // Handle room leaving
+    const leaveRoom = () => {
+        setStatus(USER_STATUS.DISCONNECTED)
+        setCurrentUser({
+            username: "",
+            roomId: "",
+        })
+    }
+
     return (
         <AppContext.Provider
             value={{
@@ -43,6 +52,7 @@ function AppContextProvider({ children }: { children: ReactNode }) {
                 setActivityState,
                 drawingData,
                 setDrawingData,
+                leaveRoom
             }}
         >
             {children}

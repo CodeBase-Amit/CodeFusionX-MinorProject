@@ -1,68 +1,43 @@
-import { useEffect, useRef } from "react"
+import { useEffect } from "react"
 import useResponsive from "@/hooks/useResponsive"
-import { useAppContext } from "@/context/AppContext"
-import { useParams } from "react-router-dom"
+import { useVideoCall } from "@/context/VideoCallContext"
 
 function VideoCallView() {
   const { viewHeight } = useResponsive()
-  const { currentUser } = useAppContext()
-  const { roomId } = useParams()
-  const iframeRef = useRef<HTMLIFrameElement>(null)
-  const iframeLoaded = useRef(false)
+  const { setVideoCallVisible, isVideoCallActive, startVideoCall } = useVideoCall()
 
-  // URL for the video call
-  const videoCallUrl = `http://localhost:3030?roomId=${roomId}&username=${encodeURIComponent(currentUser.username)}`
-
-  // Keep iframe loaded and active even when not visible
+  // When this view is active, make the video call visible
   useEffect(() => {
-    // Create or restore iframe
-    if (!iframeLoaded.current && iframeRef.current) {
-      // Set the source only once to prevent reloading
-      if (!iframeRef.current.src) {
-        iframeRef.current.src = videoCallUrl
-      }
-      iframeLoaded.current = true
+    // If video call isn't active, start it
+    if (!isVideoCallActive) {
+      startVideoCall()
     }
-
-    // Ensure iframe remains active when tab switches
-    const handleVisibilityChange = () => {
-      if (document.visibilityState === 'visible' && iframeRef.current) {
-        // Just a small interaction to keep the iframe active
-        const iframe = iframeRef.current
-        if (iframe.contentWindow) {
-          try {
-            // Post a message to keep the iframe active
-            iframe.contentWindow.postMessage({
-              type: 'keep-alive',
-              from: 'codefusion'
-            }, '*')
-          } catch (e) {
-            console.warn('Could not post message to iframe:', e)
-          }
-        }
-      }
-    }
-
-    // Listen for tab visibility changes
-    document.addEventListener('visibilitychange', handleVisibilityChange)
-
-    // Clean up
+    
+    // Make the video call visible when this view is active
+    setVideoCallVisible(true)
+    
+    // When navigating away from this view, hide but don't stop the video call
     return () => {
-      document.removeEventListener('visibilitychange', handleVisibilityChange)
+      // We don't hide the video call anymore since it's now a floating window
+      // setVideoCallVisible(false)
     }
-  }, [videoCallUrl])
+  }, [setVideoCallVisible, isVideoCallActive, startVideoCall])
 
   return (
     <div
-      className="flex flex-col w-full"
+      className="flex flex-col w-full h-full relative"
       style={{ height: viewHeight }}
     >
-      <iframe
-        ref={iframeRef}
-        title="Video Call"
-        className="w-full h-full border-0"
-        allow="camera; microphone; fullscreen; display-capture"
-      />
+      {/* The video call iframe container */}
+      <div className="w-full h-full flex items-center justify-center">
+        <div className="text-center text-gray-400">
+          <p>Video call is now displayed as a floating window.</p>
+          <p>You can drag, resize, and position it anywhere on your screen.</p>
+          {!isVideoCallActive && (
+            <p>Starting video call...</p>
+          )}
+        </div>
+      </div>
     </div>
   )
 }

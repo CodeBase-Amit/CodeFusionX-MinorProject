@@ -1,0 +1,68 @@
+.video-call-iframe-container {
+  display: block;
+  position: absolute;
+  overflow: hidden;
+  z-index: 999;
+  background-color: #1e1e1e;
+  border-radius: 8px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+  transition: none;
+}
+
+.video-call-drag-handle {
+  height: 30px;
+  background-color: #2d2d2d;
+  cursor: move;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 10px;
+  user-select: none;
+}
+
+.video-call-drag-handle span {
+  color: white;
+  font-weight: bold;
+}
+
+.video-call-drag-handle button {
+  background: none;
+  border: none;
+  color: white;
+  cursor: pointer;
+  font-size: 16px;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.video-call-drag-handle button:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+.video-call-resize-handle {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  width: 15px;
+  height: 15px;
+  cursor: nwse-resize;
+  background-color: transparent;
+}
+
+.video-call-resize-handle::after {
+  content: "";
+  position: absolute;
+  right: 4px;
+  bottom: 4px;
+  width: 0;
+  height: 0;
+  border-style: solid;
+  border-width: 0 0 8px 8px;
+  border-color: transparent transparent rgba(255, 255, 255, 0.5) transparent;
+}
+
+.video-call-iframe {
+  width: 100%;
+  height: calc(100% - 30px);
+  border: none;
+} 
