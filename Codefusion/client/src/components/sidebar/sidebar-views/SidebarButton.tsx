@@ -4,6 +4,7 @@ import { VIEWS } from "@/types/view"
 import { useState } from "react"
 import { Tooltip } from "react-tooltip"
 import { buttonStyles, tooltipStyles } from "../tooltipStyles"
+import { useVideoCall } from "@/context/VideoCallContext"
 
 interface ViewButtonProps {
     viewName: VIEWS
@@ -14,9 +15,17 @@ const ViewButton = ({ viewName, icon }: ViewButtonProps) => {
     const { activeView, setActiveView, isSidebarOpen, setIsSidebarOpen } =
         useViews()
     const { isNewMessage } = useChatRoom()
+    const { toggleVideoCall } = useVideoCall()
     const [showTooltip, setShowTooltip] = useState(true)
 
     const handleViewClick = (viewName: VIEWS) => {
+        if (viewName === VIEWS.VIDEOCALL) {
+            // For video call, just toggle the video call visibility
+            toggleVideoCall()
+            return
+        }
+        
+        // For other views, use the standard behavior
         if (viewName === activeView) {
             setIsSidebarOpen(!isSidebarOpen)
         } else {

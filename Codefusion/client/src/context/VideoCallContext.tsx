@@ -8,7 +8,7 @@ interface VideoCallContextType {
   isVideoCallActive: boolean;
   startVideoCall: () => void;
   stopVideoCall: () => void;
-  setVideoCallVisible: (visible: boolean) => void;
+  toggleVideoCall: () => void;
   isVideoCallVisible: boolean;
 }
 
@@ -26,7 +26,7 @@ export const VideoCallProvider = ({ children }: { children: ReactNode }) => {
   const [isVideoCallActive, setIsVideoCallActive] = useState(false);
   const [isVideoCallVisible, setIsVideoCallVisible] = useState(false);
   const [position, setPosition] = useState({ x: 0, y: 0 });
-  const [size, setSize] = useState({ width: 30, height: 50 });
+  const [size, setSize] = useState({ width: 50, height: 100 });
   const { currentUser } = useAppContext();
   const { socket } = useSocket();
   const { roomId } = useParams();
@@ -54,6 +54,7 @@ export const VideoCallProvider = ({ children }: { children: ReactNode }) => {
   const stopVideoCall = useCallback(() => {
     console.log("Stopping video call");
     setIsVideoCallActive(false);
+    setIsVideoCallVisible(false);
     if (iframeRef.current) {
       iframeRef.current.src = "about:blank";
       iframeLoaded.current = false;
@@ -70,21 +71,37 @@ export const VideoCallProvider = ({ children }: { children: ReactNode }) => {
     console.log("Starting video call");
     setIsVideoCallActive(true);
     
-    // Initialize position to right side of screen when starting video call
-    const initialWidth = window.innerWidth * 0.3; // 30% of window width
-    const initialHeight = window.innerHeight * 0.5; // 50% of window height
-    
-    // Position it on the right side initially
+    // Initialize position to left side of screen taking half width when video call starts
+    // Not showing by default anymore
     setPosition({
-      x: 10, // A small margin from the left edge
+      x: 0, // Left edge
       y: 60  // Some space from the top for app header
     });
+    
+    // Set size to take half of the screen width
+    setSize({
+      width: 50, // 50% of window width
+      height: 100 // 100% of the available height
+    });
   }, []);
+  
+  // Toggle video call visibility
+  const toggleVideoCall = useCallback(() => {
+    if (!isVideoCallActive) {
+      // If not active, start it and make visible
+      startVideoCall();
+      setIsVideoCallVisible(true);
+    } else {
+      // If already active, just toggle visibility
+      setIsVideoCallVisible(!isVideoCallVisible);
+    }
+  }, [isVideoCallActive, isVideoCallVisible, startVideoCall]);
 
-  // Initialize video call when entering a room
+  // Initialize video call when entering a room (but don't show it)
   useEffect(() => {
     if (roomId && currentUser.username && !isVideoCallActive) {
       startVideoCall();
+      // No longer making it visible by default
     }
   }, [roomId, currentUser.username, isVideoCallActive, startVideoCall]);
 
@@ -295,7 +312,7 @@ export const VideoCallProvider = ({ children }: { children: ReactNode }) => {
         startVideoCall, 
         stopVideoCall,
         isVideoCallVisible,
-        setVideoCallVisible: setIsVideoCallVisible
+        toggleVideoCall
       }}
     >
       {children}
@@ -304,7 +321,6 @@ export const VideoCallProvider = ({ children }: { children: ReactNode }) => {
           ref={containerRef}
           className={`video-call-iframe-container ${isVideoCallVisible ? 'visible' : 'hidden'}`}
           style={{ 
-            display: isVideoCallVisible ? 'block' : 'none',
             width: `${size.width}%`,
             height: `${size.height}%`,
             top: `${position.y}px`,

@@ -6,7 +6,17 @@
   background-color: #1e1e1e;
   border-radius: 8px;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
-  transition: none;
+  transition: all 0.3s ease;
+}
+
+.video-call-iframe-container.hidden {
+  opacity: 0;
+  visibility: hidden;
+}
+
+.video-call-iframe-container.visible {
+  opacity: 1;
+  visibility: visible;
 }
 
 .video-call-drag-handle {
