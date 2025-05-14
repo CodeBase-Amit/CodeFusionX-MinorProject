@@ -75,4 +75,40 @@
   width: 100%;
   height: calc(100% - 30px);
   border: none;
+}
+
+/* Sidebar view specific styles */
+.sidebar-video-call {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  background-color: #1e1e1e;
+  overflow: hidden;
+}
+
+.sidebar-video-call iframe {
+  width: 100%;
+  height: 100%;
+  border: none;
+  background-color: #1e1e1e;
+}
+
+/* Hidden background iframe styles */
+.hidden-video-call {
+  position: fixed;
+  top: -9999px;
+  left: -9999px;
+  width: 10px;
+  height: 10px;
+  opacity: 0.01;
+  pointer-events: none;
+  z-index: -1;
+  overflow: hidden;
+}
+
+.hidden-video-iframe {
+  width: 10px;
+  height: 10px;
+  border: none;
 } 

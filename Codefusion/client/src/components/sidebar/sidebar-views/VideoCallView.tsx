@@ -1,39 +1,39 @@
-import { useEffect } from "react"
+import { useEffect, useRef } from "react"
 import useResponsive from "@/hooks/useResponsive"
 import { useVideoCall } from "@/context/VideoCallContext"
 
 function VideoCallView() {
   const { viewHeight } = useResponsive()
-  const { isVideoCallActive, isVideoCallVisible } = useVideoCall()
-  
+  const { isVideoCallActive, videoCallUrl } = useVideoCall()
+  const viewIframeRef = useRef<HTMLIFrameElement>(null)
+
+  // Initialize the view iframe when component mounts
+  useEffect(() => {
+    if (isVideoCallActive && viewIframeRef.current) {
+      // For the view iframe, we want to reload it each time it's shown
+      // This ensures it displays the current state of the video call
+      viewIframeRef.current.src = videoCallUrl
+    }
+  }, [isVideoCallActive, videoCallUrl])
+
   return (
     <div
       className="flex flex-col w-full h-full relative"
       style={{ height: viewHeight }}
     >
-      {/* The video call iframe container */}
-      <div className="w-full h-full flex items-center justify-center">
-        <div className="text-center text-gray-400">
-          <p className="text-lg mb-2">Video Call</p>
-          
-          {isVideoCallVisible ? (
-            <p>Video call is currently displayed as a floating window.</p>
-          ) : (
-            <p>Video call is currently hidden.</p>
-          )}
-          
-          <p className="mt-4">
-            Click the video call button in the sidebar to show/hide the video call.
-          </p>
-          
-          <p className="mt-2">
-            You can drag the video call window to reposition it, and resize it using the bottom-right corner.
-          </p>
-          
-          {!isVideoCallActive && (
-            <p className="mt-4 text-yellow-400">Starting video call...</p>
-          )}
-        </div>
+      <div className="w-full h-full flex-1 overflow-hidden">
+        {isVideoCallActive ? (
+          <iframe
+            ref={viewIframeRef}
+            title="Video Call View"
+            className="w-full h-full border-none"
+            allow="camera; microphone; fullscreen; display-capture"
+          />
+        ) : (
+          <div className="flex items-center justify-center h-full">
+            <p className="text-lg text-gray-400">Initializing video call...</p>
+          </div>
+        )}
       </div>
     </div>
   )

@@ -15,13 +15,19 @@ const ViewButton = ({ viewName, icon }: ViewButtonProps) => {
     const { activeView, setActiveView, isSidebarOpen, setIsSidebarOpen } =
         useViews()
     const { isNewMessage } = useChatRoom()
-    const { toggleVideoCall } = useVideoCall()
+    const { isVideoCallActive, startVideoCall, toggleVideoCall } = useVideoCall()
     const [showTooltip, setShowTooltip] = useState(true)
 
     const handleViewClick = (viewName: VIEWS) => {
         if (viewName === VIEWS.VIDEOCALL) {
-            // For video call, just toggle the video call visibility
-            toggleVideoCall()
+            // For video call view, we toggle visibility
+            if (!isVideoCallActive) {
+                startVideoCall()
+            }
+            
+            // Set the view to video call and ensure sidebar is open
+            setActiveView(viewName)
+            setIsSidebarOpen(true)
             return
         }
         
