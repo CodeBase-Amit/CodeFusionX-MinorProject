@@ -36,6 +36,10 @@ export default function App({webSocketUrl}){
     const { peers, socket } = useWebSocket(webSocketUrl);
     const { consumerTransport, toggleMute, toggleVideo, shareScreen, stopScreenShare } = useMediaSoup(socket, videoRef, displayName);
 
+    // Filter out peers that have the same display name as the local user
+    const filteredPeers = peers.filter(peer => peer.displayName !== displayName);
+    console.log("Filtered out duplicate peers:", displayName, peers.length, "->", filteredPeers.length);
+
     // Handle control button clicks
     const handleMuteToggle = () => {
         setIsMuted(!isMuted);
@@ -84,7 +88,7 @@ export default function App({webSocketUrl}){
                     />
                 </div>
                 
-                {peers.map(peer => (
+                {filteredPeers.map(peer => (
                     <div key={peer.id} className="video-item">
                         <Peer 
                             peerId={peer.id} 
